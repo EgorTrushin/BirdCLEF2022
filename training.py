@@ -32,9 +32,7 @@ if __name__ == '__main__':
     device = get_device()
 
     for fold in config["train_folds"]:
-        logger.info("=" * 100)
-        logger.info(f"Fold {fold} Training")
-        logger.info("=" * 100)
+        logger.info(f"\n###### Fold {fold}")
 
         trn_df = df[df.kfold != fold].reset_index(drop=True)
         val_df = df[df.kfold == fold].reset_index(drop=True)
@@ -80,7 +78,7 @@ if __name__ == '__main__':
         best_score = -np.inf
 
         for epoch in range(config["epochs"]):
-            logger.info("Starting {} epoch...".format(epoch + 1))
+            logger.info("#### Epoch {}".format(epoch + 1))
 
             start_time = time.time()
 
