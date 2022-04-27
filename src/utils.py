@@ -20,23 +20,21 @@ def read_config(filename="config.yaml"):
 
 def process_data(data_path):
     df_train = pd.read_csv(Path(data_path, "train_metadata.csv"))
-    df_train["new_target"] = (df_train["primary_label"] + " " +
-                              df_train["secondary_labels"].map(
-                                  lambda x: " ".join(ast.literal_eval(x))))
-    df_train["len_new_target"] = df_train["new_target"].map(
-        lambda x: len(x.split()))
+    df_train["new_target"] = (
+        df_train["primary_label"] + " " + df_train["secondary_labels"].map(lambda x: " ".join(ast.literal_eval(x)))
+    )
+    df_train["len_new_target"] = df_train["new_target"].map(lambda x: len(x.split()))
 
-    df_train["file_path"] = data_path + '/train_audio/' + df_train['filename']
+    df_train["file_path"] = data_path + "/train_audio/" + df_train["filename"]
 
     return df_train
 
 
 def create_folds(df_train, **kwargs):
     Fold = StratifiedKFold(shuffle=True, **kwargs)
-    for n, (trn_index, val_index) in enumerate(
-            Fold.split(df_train, df_train['primary_label'])):
-        df_train.loc[val_index, 'kfold'] = int(n)
-    df_train['kfold'] = df_train['kfold'].astype(int)
+    for n, (trn_index, val_index) in enumerate(Fold.split(df_train, df_train["primary_label"])):
+        df_train.loc[val_index, "kfold"] = int(n)
+    df_train["kfold"] = df_train["kfold"].astype(int)
     return df_train
 
 

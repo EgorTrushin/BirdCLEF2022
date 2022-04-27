@@ -1,5 +1,6 @@
-def init_logger(log_file='train.log'):
+def init_logger(log_file="train.log"):
     from logging import getLogger, INFO, FileHandler, Formatter, StreamHandler
+
     logger = getLogger(__name__)
     logger.setLevel(INFO)
     handler1 = StreamHandler()

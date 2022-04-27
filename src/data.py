@@ -15,44 +15,183 @@ import albumentations as A
 
 
 SCORED_BIRDS = [
-    "akiapo", "aniani", "apapan", "barpet", "crehon",
-    "elepai", "ercfra", "hawama", "hawcre", "hawgoo",
-    "hawhaw", "hawpet1", "houfin", "iiwi", "jabwar",
-    "maupar", "omao", "puaioh", "skylar", "warwhe1",
-    "yefcan"]
+    "akiapo",
+    "aniani",
+    "apapan",
+    "barpet",
+    "crehon",
+    "elepai",
+    "ercfra",
+    "hawama",
+    "hawcre",
+    "hawgoo",
+    "hawhaw",
+    "hawpet1",
+    "houfin",
+    "iiwi",
+    "jabwar",
+    "maupar",
+    "omao",
+    "puaioh",
+    "skylar",
+    "warwhe1",
+    "yefcan",
+]
 
 ALL_BIRDS = [
-    'afrsil1', 'akekee', 'akepa1', 'akiapo', 'akikik',
-    'amewig', 'aniani', 'apapan', 'arcter', 'barpet',
-    'bcnher', 'belkin1', 'bkbplo', 'bknsti', 'bkwpet',
-    'blkfra', 'blknod', 'bongul', 'brant', 'brnboo',
-    'brnnod', 'brnowl', 'brtcur', 'bubsan', 'buffle',
-    'bulpet', 'burpar', 'buwtea', 'cacgoo1', 'calqua',
-    'cangoo', 'canvas', 'caster1', 'categr', 'chbsan',
-    'chemun', 'chukar', 'cintea', 'comgal1', 'commyn',
-    'compea', 'comsan', 'comwax', 'coopet', 'crehon',
-    'dunlin', 'elepai', 'ercfra', 'eurwig', 'fragul',
-    'gadwal', 'gamqua', 'glwgul', 'gnwtea', 'golphe',
-    'grbher3', 'grefri', 'gresca', 'gryfra', 'gwfgoo',
-    'hawama', 'hawcoo', 'hawcre', 'hawgoo', 'hawhaw',
-    'hawpet1', 'hoomer', 'houfin', 'houspa', 'hudgod',
-    'iiwi', 'incter1', 'jabwar', 'japqua', 'kalphe',
-    'kauama', 'laugul', 'layalb', 'lcspet', 'leasan',
-    'leater1', 'lessca', 'lesyel', 'lobdow', 'lotjae',
-    'madpet', 'magpet1', 'mallar3', 'masboo', 'mauala',
-    'maupar', 'merlin', 'mitpar', 'moudov', 'norcar',
-    'norhar2', 'normoc', 'norpin', 'norsho', 'nutman',
-    'oahama', 'omao', 'osprey', 'pagplo', 'palila',
-    'parjae', 'pecsan', 'peflov', 'perfal', 'pibgre',
-    'pomjae', 'puaioh', 'reccar', 'redava', 'redjun',
-    'redpha1', 'refboo', 'rempar', 'rettro', 'ribgul',
-    'rinduc', 'rinphe', 'rocpig', 'rorpar', 'rudtur',
-    'ruff', 'saffin', 'sander', 'semplo', 'sheowl',
-    'shtsan', 'skylar', 'snogoo', 'sooshe', 'sooter1',
-    'sopsku1', 'sora', 'spodov', 'sposan', 'towsol',
-    'wantat1', 'warwhe1', 'wesmea', 'wessan', 'wetshe',
-    'whfibi', 'whiter', 'whttro', 'wiltur', 'yebcar',
-    'yefcan', 'zebdov']
+    "afrsil1",
+    "akekee",
+    "akepa1",
+    "akiapo",
+    "akikik",
+    "amewig",
+    "aniani",
+    "apapan",
+    "arcter",
+    "barpet",
+    "bcnher",
+    "belkin1",
+    "bkbplo",
+    "bknsti",
+    "bkwpet",
+    "blkfra",
+    "blknod",
+    "bongul",
+    "brant",
+    "brnboo",
+    "brnnod",
+    "brnowl",
+    "brtcur",
+    "bubsan",
+    "buffle",
+    "bulpet",
+    "burpar",
+    "buwtea",
+    "cacgoo1",
+    "calqua",
+    "cangoo",
+    "canvas",
+    "caster1",
+    "categr",
+    "chbsan",
+    "chemun",
+    "chukar",
+    "cintea",
+    "comgal1",
+    "commyn",
+    "compea",
+    "comsan",
+    "comwax",
+    "coopet",
+    "crehon",
+    "dunlin",
+    "elepai",
+    "ercfra",
+    "eurwig",
+    "fragul",
+    "gadwal",
+    "gamqua",
+    "glwgul",
+    "gnwtea",
+    "golphe",
+    "grbher3",
+    "grefri",
+    "gresca",
+    "gryfra",
+    "gwfgoo",
+    "hawama",
+    "hawcoo",
+    "hawcre",
+    "hawgoo",
+    "hawhaw",
+    "hawpet1",
+    "hoomer",
+    "houfin",
+    "houspa",
+    "hudgod",
+    "iiwi",
+    "incter1",
+    "jabwar",
+    "japqua",
+    "kalphe",
+    "kauama",
+    "laugul",
+    "layalb",
+    "lcspet",
+    "leasan",
+    "leater1",
+    "lessca",
+    "lesyel",
+    "lobdow",
+    "lotjae",
+    "madpet",
+    "magpet1",
+    "mallar3",
+    "masboo",
+    "mauala",
+    "maupar",
+    "merlin",
+    "mitpar",
+    "moudov",
+    "norcar",
+    "norhar2",
+    "normoc",
+    "norpin",
+    "norsho",
+    "nutman",
+    "oahama",
+    "omao",
+    "osprey",
+    "pagplo",
+    "palila",
+    "parjae",
+    "pecsan",
+    "peflov",
+    "perfal",
+    "pibgre",
+    "pomjae",
+    "puaioh",
+    "reccar",
+    "redava",
+    "redjun",
+    "redpha1",
+    "refboo",
+    "rempar",
+    "rettro",
+    "ribgul",
+    "rinduc",
+    "rinphe",
+    "rocpig",
+    "rorpar",
+    "rudtur",
+    "ruff",
+    "saffin",
+    "sander",
+    "semplo",
+    "sheowl",
+    "shtsan",
+    "skylar",
+    "snogoo",
+    "sooshe",
+    "sooter1",
+    "sopsku1",
+    "sora",
+    "spodov",
+    "sposan",
+    "towsol",
+    "wantat1",
+    "warwhe1",
+    "wesmea",
+    "wessan",
+    "wetshe",
+    "whfibi",
+    "whiter",
+    "whttro",
+    "wiltur",
+    "yebcar",
+    "yefcan",
+    "zebdov",
+]
 
 
 ALL_BIRDS_IDS = {k: v for v, k in enumerate(ALL_BIRDS)}
@@ -103,7 +242,7 @@ class OneOf(Compose):
     def __call__(self, y: np.ndarray, sr):
         data = y
         if self.transforms_ps and (random.random() < self.p):
-            random_state = np.random.RandomState(random.randint(0, 2 ** 32 - 1))
+            random_state = np.random.RandomState(random.randint(0, 2**32 - 1))
             t = random_state.choice(self.transforms, p=self.transforms_ps)
             data = t(y, sr)
         return data
@@ -150,11 +289,11 @@ class GaussianNoise(AudioTransform):
 
     def apply(self, y: np.ndarray, **params):
         snr = np.random.uniform(self.min_snr, self.max_snr)
-        a_signal = np.sqrt(y ** 2).max()
+        a_signal = np.sqrt(y**2).max()
         a_noise = a_signal / (10 ** (snr / 20))
 
         white_noise = np.random.randn(len(y))
-        a_white = np.sqrt(white_noise ** 2).max()
+        a_white = np.sqrt(white_noise**2).max()
         augmented = (y + white_noise * 1 / a_white * a_noise).astype(y.dtype)
         return augmented
 
@@ -168,11 +307,11 @@ class PinkNoise(AudioTransform):
 
     def apply(self, y: np.ndarray, **params):
         snr = np.random.uniform(self.min_snr, self.max_snr)
-        a_signal = np.sqrt(y ** 2).max()
+        a_signal = np.sqrt(y**2).max()
         a_noise = a_signal / (10 ** (snr / 20))
 
         pink_noise = cn.powerlaw_psd_gaussian(1, len(y))
-        a_pink = np.sqrt(pink_noise ** 2).max()
+        a_pink = np.sqrt(pink_noise**2).max()
         augmented = (y + pink_noise * 1 / a_pink * a_noise).astype(y.dtype)
         return augmented
 
@@ -266,6 +405,7 @@ class CosineVolume(AudioTransform):
         dbs = _db2float(cosine * db)
         return y * dbs
 
+
 def compute_melspec(y, params):
     """
     Computes a mel-spectrogram and puts it at decibel scale
@@ -276,7 +416,11 @@ def compute_melspec(y, params):
         np array -- Mel-spectrogram
     """
     melspec = librosa.feature.melspectrogram(
-        y=y, sr=params["sr"], n_mels=params["n_mels"], fmin=params["fmin"], fmax=params["fmax"],
+        y=y,
+        sr=params["sr"],
+        n_mels=params["n_mels"],
+        fmin=params["fmin"],
+        fmax=params["fmax"],
     )
 
     melspec = librosa.power_to_db(melspec).astype(np.float32)
@@ -305,12 +449,10 @@ def crop_or_pad(y, length, sr, train=True, probs=None):
         elif probs is None:
             start = np.random.randint(len(y) - length)
         else:
-            start = (
-                    np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
-            )
+            start = np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
             start = int(sr * (start))
 
-        y = y[start: start + length]
+        y = y[start : start + length]
 
     return y.astype(np.float32)
 
@@ -348,36 +490,38 @@ def mono_to_color(X, eps=1e-6, mean=None, std=None):
 
 
 class ScoredBirdsDataset(torch.utils.data.Dataset):
-    def __init__(self,
-                 df,
-                 AudioParams,
-                 image_size,
-                 mode='train'):
+    def __init__(self, df, AudioParams, image_size, mode="train"):
         self.df = df
         self.AudioParams = AudioParams
         self.mode = mode
 
-        mean = (0.485, 0.456, 0.406) # RGB
-        std = (0.229, 0.224, 0.225) # RGB
+        mean = (0.485, 0.456, 0.406)  # RGB
+        std = (0.229, 0.224, 0.225)  # RGB
 
         self.albu_transforms = {
-           'train' : A.Compose([
-                         A.HorizontalFlip(p=0.5),
-                         A.OneOf([
-                             A.Cutout(max_h_size=5, max_w_size=16),
-                             A.CoarseDropout(max_holes=4),
-                         ], p=0.5),
-                         A.Resize(image_size[0], image_size[1]),
-                         A.Normalize(mean, std),
-                         ]),
-           'valid' : A.Compose([
-                         A.Resize(image_size[0], image_size[1]),
-                         A.Normalize(mean, std),
-                     ]),
-            }
+            "train": A.Compose(
+                [
+                    A.HorizontalFlip(p=0.5),
+                    A.OneOf(
+                        [
+                            A.Cutout(max_h_size=5, max_w_size=16),
+                            A.CoarseDropout(max_holes=4),
+                        ],
+                        p=0.5,
+                    ),
+                    A.Resize(image_size[0], image_size[1]),
+                    A.Normalize(mean, std),
+                ]
+            ),
+            "valid": A.Compose(
+                [
+                    A.Resize(image_size[0], image_size[1]),
+                    A.Normalize(mean, std),
+                ]
+            ),
+        }
 
-
-        if mode == 'train':
+        if mode == "train":
             self.wave_transforms = Compose(
                 [
                     OneOf(
@@ -417,31 +561,32 @@ class ScoredBirdsDataset(torch.utils.data.Dataset):
         if len_y < effective_length:
             new_y = np.zeros(effective_length, dtype=y.dtype)
             start = np.random.randint(effective_length - len_y)
-            new_y[start:start + len_y] = y
+            new_y[start : start + len_y] = y
             y = new_y.astype(np.float32)
         elif len_y > effective_length:
             start = np.random.randint(len_y - effective_length)
-            y = y[start:start + effective_length].astype(np.float32)
+            y = y[start : start + effective_length].astype(np.float32)
         else:
             y = y.astype(np.float32)
 
-
         if len(y) > 0:
-            y = y[:self.AudioParams["duration"]*self.AudioParams["sr"]]
+            y = y[: self.AudioParams["duration"] * self.AudioParams["sr"]]
 
             if self.wave_transforms:
                 y = self.wave_transforms(y, sr=self.AudioParams["sr"])
 
-        y = np.concatenate([y, y, y])[:self.AudioParams["duration"] * self.AudioParams["sr"]]
-        y = crop_or_pad(y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None)
+        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
+        y = crop_or_pad(
+            y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None
+        )
         image = compute_melspec(y, self.AudioParams)
         image = mono_to_color(image)
         image = image.astype(np.uint8)
 
-        image = self.albu_transforms[self.mode](image=image)['image']
+        image = self.albu_transforms[self.mode](image=image)["image"]
         image = image.T
 
-        targets = np.zeros(len(SCORED_BIRDS)+1, dtype=float)
+        targets = np.zeros(len(SCORED_BIRDS) + 1, dtype=float)
 
         for ebird_code in labels.split():
             if ebird_code in SCORED_BIRDS:
@@ -456,36 +601,38 @@ class ScoredBirdsDataset(torch.utils.data.Dataset):
 
 
 class AllBirdsDataset(torch.utils.data.Dataset):
-    def __init__(self,
-                 df,
-                 AudioParams,
-                 image_size,
-                 mode='train'):
+    def __init__(self, df, AudioParams, image_size, mode="train"):
         self.df = df
         self.AudioParams = AudioParams
         self.mode = mode
 
-        mean = (0.485, 0.456, 0.406) # RGB
-        std = (0.229, 0.224, 0.225) # RGB
+        mean = (0.485, 0.456, 0.406)  # RGB
+        std = (0.229, 0.224, 0.225)  # RGB
 
         self.albu_transforms = {
-           'train' : A.Compose([
-                         A.HorizontalFlip(p=0.5),
-                         A.OneOf([
-                             A.Cutout(max_h_size=5, max_w_size=16),
-                             A.CoarseDropout(max_holes=4),
-                         ], p=0.5),
-                         A.Resize(image_size[0], image_size[1]),
-                         A.Normalize(mean, std),
-                         ]),
-           'valid' : A.Compose([
-                         A.Resize(image_size[0], image_size[1]),
-                         A.Normalize(mean, std),
-                     ]),
-            }
+            "train": A.Compose(
+                [
+                    A.HorizontalFlip(p=0.5),
+                    A.OneOf(
+                        [
+                            A.Cutout(max_h_size=5, max_w_size=16),
+                            A.CoarseDropout(max_holes=4),
+                        ],
+                        p=0.5,
+                    ),
+                    A.Resize(image_size[0], image_size[1]),
+                    A.Normalize(mean, std),
+                ]
+            ),
+            "valid": A.Compose(
+                [
+                    A.Resize(image_size[0], image_size[1]),
+                    A.Normalize(mean, std),
+                ]
+            ),
+        }
 
-
-        if mode == 'train':
+        if mode == "train":
             self.wave_transforms = Compose(
                 [
                     OneOf(
@@ -525,28 +672,29 @@ class AllBirdsDataset(torch.utils.data.Dataset):
         if len_y < effective_length:
             new_y = np.zeros(effective_length, dtype=y.dtype)
             start = np.random.randint(effective_length - len_y)
-            new_y[start:start + len_y] = y
+            new_y[start : start + len_y] = y
             y = new_y.astype(np.float32)
         elif len_y > effective_length:
             start = np.random.randint(len_y - effective_length)
-            y = y[start:start + effective_length].astype(np.float32)
+            y = y[start : start + effective_length].astype(np.float32)
         else:
             y = y.astype(np.float32)
 
-
         if len(y) > 0:
-            y = y[:self.AudioParams["duration"]*self.AudioParams["sr"]]
+            y = y[: self.AudioParams["duration"] * self.AudioParams["sr"]]
 
             if self.wave_transforms:
                 y = self.wave_transforms(y, sr=self.AudioParams["sr"])
 
-        y = np.concatenate([y, y, y])[:self.AudioParams["duration"] * self.AudioParams["sr"]]
-        y = crop_or_pad(y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None)
+        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
+        y = crop_or_pad(
+            y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None
+        )
         image = compute_melspec(y, self.AudioParams)
         image = mono_to_color(image)
         image = image.astype(np.uint8)
 
-        image = self.albu_transforms[self.mode](image=image)['image']
+        image = self.albu_transforms[self.mode](image=image)["image"]
         image = image.T
 
         targets = np.zeros(len(ALL_BIRDS), dtype=float)
@@ -576,14 +724,16 @@ class TestDataset(torch.utils.data.Dataset):
         end_seconds = int(sample.seconds)
         start_seconds = int(end_seconds - 5)
 
-        image = self.clip[self.AudioParams["sr"]*start_seconds:self.AudioParams["sr"]*end_seconds].astype(np.float32)
+        image = self.clip[self.AudioParams["sr"] * start_seconds : self.AudioParams["sr"] * end_seconds].astype(
+            np.float32
+        )
         image = np.nan_to_num(image)
 
         image = compute_melspec(image, self.AudioParams)
         image = mono_to_color(image)
         image = image.astype(np.uint8)
 
-        image = albu_transforms['valid'](image=image)['image'].T
+        image = albu_transforms["valid"](image=image)["image"].T
 
         return {
             "image": image,

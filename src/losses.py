@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 def loss_fn(logits, targets):
     loss_fct = BCEFocal2WayLoss()
     loss = loss_fct(logits, targets)
@@ -15,11 +16,12 @@ class BCEFocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, preds, targets):
-        bce_loss = nn.BCEWithLogitsLoss(reduction='none')(preds, targets)
+        bce_loss = nn.BCEWithLogitsLoss(reduction="none")(preds, targets)
         probas = torch.sigmoid(preds)
-        loss = targets * self.alpha * \
-            (1. - probas)**self.gamma * bce_loss + \
-            (1. - targets) * probas**self.gamma * bce_loss
+        loss = (
+            targets * self.alpha * (1.0 - probas) ** self.gamma * bce_loss
+            + (1.0 - targets) * probas**self.gamma * bce_loss
+        )
         loss = loss.mean()
         return loss
 

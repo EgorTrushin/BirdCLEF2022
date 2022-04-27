@@ -14,11 +14,11 @@ def init_layer(layer):
 
     if hasattr(layer, "bias"):
         if layer.bias is not None:
-            layer.bias.data.fill_(0.)
+            layer.bias.data.fill_(0.0)
 
 
 def init_bn(bn):
-    bn.bias.data.fill_(0.)
+    bn.bias.data.fill_(0.0)
     bn.weight.data.fill_(1.0)
 
 
@@ -63,35 +63,24 @@ def pad_framewise_output(framewise_output: torch.Tensor, frames_num: int):
     Outputs:
       output: (batch_size, frames_num, classes_num)
     """
-    output = F.interpolate(framewise_output.unsqueeze(1),
-                           size=(frames_num, framewise_output.size(2)),
-                           align_corners=True,
-                           mode="bilinear").squeeze(1)
+    output = F.interpolate(
+        framewise_output.unsqueeze(1), size=(frames_num, framewise_output.size(2)), align_corners=True, mode="bilinear"
+    ).squeeze(1)
 
     return output
 
 
 class AttBlockV2(nn.Module):
-
-    def __init__(self,
-                 in_features: int,
-                 out_features: int,
-                 activation="linear"):
+    def __init__(self, in_features: int, out_features: int, activation="linear"):
         super().__init__()
 
         self.activation = activation
-        self.att = nn.Conv1d(in_channels=in_features,
-                             out_channels=out_features,
-                             kernel_size=1,
-                             stride=1,
-                             padding=0,
-                             bias=True)
-        self.cla = nn.Conv1d(in_channels=in_features,
-                             out_channels=out_features,
-                             kernel_size=1,
-                             stride=1,
-                             padding=0,
-                             bias=True)
+        self.att = nn.Conv1d(
+            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+        )
+        self.cla = nn.Conv1d(
+            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+        )
 
         self.init_weights()
 
@@ -107,35 +96,27 @@ class AttBlockV2(nn.Module):
         return x, norm_att, cla
 
     def nonlinear_transform(self, x):
-        if self.activation == 'linear':
+        if self.activation == "linear":
             return x
-        elif self.activation == 'sigmoid':
+        elif self.activation == "sigmoid":
             return torch.sigmoid(x)
 
 
 class TimmSED(nn.Module):
-
-    def __init__(self,
-                 base_model_name: str,
-                 pretrained=True,
-                 num_classes=24,
-                 in_channels=3,
-                 n_mels=224,
-                 p_spec_augmenter=1.0):
+    def __init__(
+        self, base_model_name: str, pretrained=True, num_classes=24, in_channels=3, n_mels=224, p_spec_augmenter=1.0
+    ):
         super().__init__()
 
         self.p_spec_augmenter = p_spec_augmenter
 
-        self.spec_augmenter = SpecAugmentation(time_drop_width=64 // 2,
-                                               time_stripes_num=2,
-                                               freq_drop_width=8 // 2,
-                                               freq_stripes_num=2)
+        self.spec_augmenter = SpecAugmentation(
+            time_drop_width=64 // 2, time_stripes_num=2, freq_drop_width=8 // 2, freq_stripes_num=2
+        )
 
         self.bn0 = nn.BatchNorm2d(n_mels)
 
-        base_model = timm.create_model(base_model_name,
-                                       pretrained=pretrained,
-                                       in_chans=in_channels)
+        base_model = timm.create_model(base_model_name, pretrained=pretrained, in_chans=in_channels)
         layers = list(base_model.children())[:-2]
         self.encoder = nn.Sequential(*layers)
 
@@ -145,9 +126,7 @@ class TimmSED(nn.Module):
             in_features = base_model.classifier.in_features
 
         self.fc1 = nn.Linear(in_features, in_features, bias=True)
-        self.att_block = AttBlockV2(in_features,
-                                    num_classes,
-                                    activation="sigmoid")
+        self.att_block = AttBlockV2(in_features, num_classes, activation="sigmoid")
 
         self.init_weight()
 
@@ -200,10 +179,10 @@ class TimmSED(nn.Module):
         framewise_logit = pad_framewise_output(framewise_logit, frames_num)
 
         output_dict = {
-            'framewise_output': framewise_output,
-            'clipwise_output': clipwise_output,
-            'logit': logit,
-            'framewise_logit': framewise_logit,
+            "framewise_output": framewise_output,
+            "clipwise_output": clipwise_output,
+            "logit": logit,
+            "framewise_logit": framewise_logit,
         }
 
         return output_dict

@@ -10,7 +10,7 @@ from .meter import AverageMeter, MetricMeter
 def rand_bbox(size, lam):
     W = size[2]
     H = size[3]
-    cut_rat = np.sqrt(1. - lam)
+    cut_rat = np.sqrt(1.0 - lam)
     cut_w = int(W * cut_rat)
     cut_h = int(H * cut_rat)
 
@@ -40,6 +40,7 @@ def cutmix(data, targets, alpha):
     new_targets = [targets, shuffled_targets, lam]
     return data, new_targets
 
+
 def mixup(data, targets, alpha):
     indices = torch.randperm(data.size(0))
     shuffled_data = data[indices]
@@ -56,6 +57,7 @@ def cutmix_criterion(preds, new_targets):
     criterion = BCEFocal2WayLoss()
     return lam * criterion(preds, targets1) + (1 - lam) * criterion(preds, targets2)
 
+
 def mixup_criterion(preds, new_targets):
     targets1, targets2, lam = new_targets[0], new_targets[1], new_targets[2]
     criterion = BCEFocal2WayLoss()
@@ -71,8 +73,8 @@ def train_fn(model, data_loader, device, optimizer, scheduler, apex=True, tqdm_d
 
     for data in tk0:
         optimizer.zero_grad()
-        inputs = data['image'].to(device)
-        targets = data['targets'].to(device)
+        inputs = data["image"].to(device)
+        targets = data["targets"].to(device)
         with autocast(enabled=apex):
             outputs = model(inputs)
             loss = loss_fn(outputs, targets)
@@ -101,10 +103,10 @@ def train_mixup_cutmix_fn(model, data_loader, device, optimizer, scheduler, apex
 
     for data in tk0:
         optimizer.zero_grad()
-        inputs = data['image'].to(device)
-        targets = data['targets'].to(device)
+        inputs = data["image"].to(device)
+        targets = data["targets"].to(device)
 
-        if np.random.rand()<0.5:
+        if np.random.rand() < 0.5:
             inputs, new_targets = mixup(inputs, targets, 0.4)
             with autocast(enabled=apex):
                 outputs = model(inputs)

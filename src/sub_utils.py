@@ -14,11 +14,11 @@ def init_layer(layer):
 
     if hasattr(layer, "bias"):
         if layer.bias is not None:
-            layer.bias.data.fill_(0.)
+            layer.bias.data.fill_(0.0)
 
 
 def init_bn(bn):
-    bn.bias.data.fill_(0.)
+    bn.bias.data.fill_(0.0)
     bn.weight.data.fill_(1.0)
 
 
@@ -63,35 +63,24 @@ def pad_framewise_output(framewise_output: torch.Tensor, frames_num: int):
     Outputs:
       output: (batch_size, frames_num, classes_num)
     """
-    output = F.interpolate(framewise_output.unsqueeze(1),
-                           size=(frames_num, framewise_output.size(2)),
-                           align_corners=True,
-                           mode="bilinear").squeeze(1)
+    output = F.interpolate(
+        framewise_output.unsqueeze(1), size=(frames_num, framewise_output.size(2)), align_corners=True, mode="bilinear"
+    ).squeeze(1)
 
     return output
 
 
 class AttBlockV2(nn.Module):
-
-    def __init__(self,
-                 in_features: int,
-                 out_features: int,
-                 activation="linear"):
+    def __init__(self, in_features: int, out_features: int, activation="linear"):
         super().__init__()
 
         self.activation = activation
-        self.att = nn.Conv1d(in_channels=in_features,
-                             out_channels=out_features,
-                             kernel_size=1,
-                             stride=1,
-                             padding=0,
-                             bias=True)
-        self.cla = nn.Conv1d(in_channels=in_features,
-                             out_channels=out_features,
-                             kernel_size=1,
-                             stride=1,
-                             padding=0,
-                             bias=True)
+        self.att = nn.Conv1d(
+            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+        )
+        self.cla = nn.Conv1d(
+            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+        )
 
         self.init_weights()
 
@@ -107,35 +96,27 @@ class AttBlockV2(nn.Module):
         return x, norm_att, cla
 
     def nonlinear_transform(self, x):
-        if self.activation == 'linear':
+        if self.activation == "linear":
             return x
-        elif self.activation == 'sigmoid':
+        elif self.activation == "sigmoid":
             return torch.sigmoid(x)
 
 
 class TimmSED(nn.Module):
-
-    def __init__(self,
-                 base_model_name: str,
-                 pretrained=True,
-                 num_classes=24,
-                 in_channels=3,
-                 n_mels=224,
-                 p_spec_augmenter=1.0):
+    def __init__(
+        self, base_model_name: str, pretrained=True, num_classes=24, in_channels=3, n_mels=224, p_spec_augmenter=1.0
+    ):
         super().__init__()
 
         self.p_spec_augmenter = p_spec_augmenter
 
-        self.spec_augmenter = SpecAugmentation(time_drop_width=64 // 2,
-                                               time_stripes_num=2,
-                                               freq_drop_width=8 // 2,
-                                               freq_stripes_num=2)
+        self.spec_augmenter = SpecAugmentation(
+            time_drop_width=64 // 2, time_stripes_num=2, freq_drop_width=8 // 2, freq_stripes_num=2
+        )
 
         self.bn0 = nn.BatchNorm2d(n_mels)
 
-        base_model = timm.create_model(base_model_name,
-                                       pretrained=pretrained,
-                                       in_chans=in_channels)
+        base_model = timm.create_model(base_model_name, pretrained=pretrained, in_chans=in_channels)
         layers = list(base_model.children())[:-2]
         self.encoder = nn.Sequential(*layers)
 
@@ -145,9 +126,7 @@ class TimmSED(nn.Module):
             in_features = base_model.classifier.in_features
 
         self.fc1 = nn.Linear(in_features, in_features, bias=True)
-        self.att_block = AttBlockV2(in_features,
-                                    num_classes,
-                                    activation="sigmoid")
+        self.att_block = AttBlockV2(in_features, num_classes, activation="sigmoid")
 
         self.init_weight()
 
@@ -200,10 +179,10 @@ class TimmSED(nn.Module):
         framewise_logit = pad_framewise_output(framewise_logit, frames_num)
 
         output_dict = {
-            'framewise_output': framewise_output,
-            'clipwise_output': clipwise_output,
-            'logit': logit,
-            'framewise_logit': framewise_logit,
+            "framewise_output": framewise_output,
+            "clipwise_output": clipwise_output,
+            "logit": logit,
+            "framewise_logit": framewise_logit,
         }
 
         return output_dict
@@ -212,19 +191,53 @@ class TimmSED(nn.Module):
 # DATA
 
 SCORED_BIRDS = [
-    "akiapo", "aniani", "apapan", "barpet", "crehon",
-    "elepai", "ercfra", "hawama", "hawcre", "hawgoo",
-    "hawhaw", "hawpet1", "houfin", "iiwi", "jabwar",
-    "maupar", "omao", "puaioh", "skylar", "warwhe1",
-    "yefcan"]
+    "akiapo",
+    "aniani",
+    "apapan",
+    "barpet",
+    "crehon",
+    "elepai",
+    "ercfra",
+    "hawama",
+    "hawcre",
+    "hawgoo",
+    "hawhaw",
+    "hawpet1",
+    "houfin",
+    "iiwi",
+    "jabwar",
+    "maupar",
+    "omao",
+    "puaioh",
+    "skylar",
+    "warwhe1",
+    "yefcan",
+]
 
 SCORED_BIRDS_EXT = [
-    "akiapo", "aniani", "apapan", "barpet", "crehon",
-    "elepai", "ercfra", "hawama", "hawcre", "hawgoo",
-    "hawhaw", "hawpet1", "houfin", "iiwi", "jabwar",
-    "maupar", "omao", "puaioh", "skylar", "warwhe1",
-    "yefcan", "others"]
-
+    "akiapo",
+    "aniani",
+    "apapan",
+    "barpet",
+    "crehon",
+    "elepai",
+    "ercfra",
+    "hawama",
+    "hawcre",
+    "hawgoo",
+    "hawhaw",
+    "hawpet1",
+    "houfin",
+    "iiwi",
+    "jabwar",
+    "maupar",
+    "omao",
+    "puaioh",
+    "skylar",
+    "warwhe1",
+    "yefcan",
+    "others",
+]
 
 
 # DATASET
@@ -243,7 +256,11 @@ def compute_melspec(y, params):
         np array -- Mel-spectrogram
     """
     melspec = librosa.feature.melspectrogram(
-        y=y, sr=params["sr"], n_mels=params["n_mels"], fmin=params["fmin"], fmax=params["fmax"],
+        y=y,
+        sr=params["sr"],
+        n_mels=params["n_mels"],
+        fmin=params["fmin"],
+        fmax=params["fmax"],
     )
 
     melspec = librosa.power_to_db(melspec).astype(np.float32)
@@ -289,16 +306,17 @@ class TestDataset(torch.utils.data.Dataset):
         self.clip = np.concatenate([clip, clip, clip])
         self.AudioParams = AudioParams
 
-        mean = (0.485, 0.456, 0.406) # RGB
-        std = (0.229, 0.224, 0.225) # RGB
+        mean = (0.485, 0.456, 0.406)  # RGB
+        std = (0.229, 0.224, 0.225)  # RGB
 
         self.albu_transforms = {
-           "valid": A.Compose([
+            "valid": A.Compose(
+                [
                     A.Resize(image_size[0], image_size[1]),
                     A.Normalize(mean, std),
-                    ]),
-               }
-
+                ]
+            ),
+        }
 
     def __len__(self):
         return len(self.df)
@@ -310,14 +328,16 @@ class TestDataset(torch.utils.data.Dataset):
         end_seconds = int(sample.seconds)
         start_seconds = int(end_seconds - 5)
 
-        image = self.clip[self.AudioParams["sr"]*start_seconds:self.AudioParams["sr"]*end_seconds].astype(np.float32)
+        image = self.clip[self.AudioParams["sr"] * start_seconds : self.AudioParams["sr"] * end_seconds].astype(
+            np.float32
+        )
         image = np.nan_to_num(image)
 
         image = compute_melspec(image, self.AudioParams)
         image = mono_to_color(image)
         image = image.astype(np.uint8)
 
-        image = self.albu_transforms["valid"](image=image)['image'].T
+        image = self.albu_transforms["valid"](image=image)["image"].T
 
         return {
             "image": image,
@@ -333,24 +353,16 @@ import pandas as pd
 import soundfile as sf
 
 
-def prediction_for_clip(test_df,
-                        clip,
-                        models,
-                        config,
-                        threshold=0.05,
-                        threshold_long=None):
+def prediction_for_clip(test_df, clip, models, config, threshold=0.05, threshold_long=None):
 
-    dataset = TestDataset(df=test_df,
-                          clip=clip,
-                          AudioParams=config["AudioParams"],
-                          image_size=config["image_size"])
+    dataset = TestDataset(df=test_df, clip=clip, AudioParams=config["AudioParams"], image_size=config["image_size"])
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     prediction_dict = {}
     for data in loader:
-        row_id = data['row_id'][0]
-        image = data['image'].to(device)
+        row_id = data["row_id"][0]
+        image = data["image"].to(device)
 
         with torch.no_grad():
             probas = []
@@ -358,13 +370,14 @@ def prediction_for_clip(test_df,
             for model in models:
                 with torch.cuda.amp.autocast():
                     output = model(image)
-                probas.append(output['clipwise_output'].detach().cpu().numpy().reshape(-1))
+                probas.append(output["clipwise_output"].detach().cpu().numpy().reshape(-1))
             probas = np.array(probas)
         if threshold_long is None:
             events = probas.mean(0) >= threshold
         else:
-            events = ((probas.mean(0) >= threshold).astype(int) \
-                      + (probas_long.mean(0) >= threshold_long).astype(int)) >= 2
+            events = (
+                (probas.mean(0) >= threshold).astype(int) + (probas_long.mean(0) >= threshold_long).astype(int)
+            ) >= 2
         labels = np.argwhere(events).reshape(-1).tolist()
         if len(labels) == 0:
             prediction_dict[str(row_id)] = "nocall"
@@ -375,11 +388,7 @@ def prediction_for_clip(test_df,
     return prediction_dict
 
 
-def prediction(test_audios,
-               models,
-               config,
-               threshold=0.05,
-               threshold_long=None):
+def prediction(test_audios, models, config, threshold=0.05, threshold_long=None):
 
     prediction_dicts = {}
     for audio_path in test_audios:
@@ -392,15 +401,9 @@ def prediction(test_audios,
             row_id = "_".join(audio_path.name.split(".")[:-1]) + f"_{second}"
             seconds.append(second)
             row_ids.append(row_id)
-        test_df = pd.DataFrame({
-            "row_id": row_ids,
-            "seconds": seconds
-        })
-        prediction_dict = prediction_for_clip(test_df,
-                                              clip=clip,
-                                              models=models,
-                                              threshold=threshold,
-                                              threshold_long=threshold_long,
-                                              config=config)
+        test_df = pd.DataFrame({"row_id": row_ids, "seconds": seconds})
+        prediction_dict = prediction_for_clip(
+            test_df, clip=clip, models=models, threshold=threshold, threshold_long=threshold_long, config=config
+        )
         prediction_dicts.update(prediction_dict)
     return prediction_dicts
