@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+"""Local version of submission script."""
 
 import torch
 import glob
 import yaml
 import pandas as pd
 from pathlib import Path
-from src.sub_utils import TimmSED, SCORED_BIRDS, prediction
+from src.sub_utils import TimmSED, ALL_BIRDS, prediction
 
 CHKPT_PATH = "ckpt/"
 DATA_PATH = "/home/egortrushin/datasets/birdclef-2022"
@@ -29,7 +30,7 @@ models = []
 for p in model_paths:
     model = TimmSED(
         base_model_name=config["base_model_name"],
-        num_classes=len(SCORED_BIRDS) + 1,
+        num_classes=len(ALL_BIRDS),
         n_mels=config["n_mels"],
         pretrained=False,
     )
