@@ -119,55 +119,55 @@ if __name__ == '__main__':
                 f'Epoch {epoch+1} - train_loss: {train_loss:.5f}  val_loss: {valid_loss:.5f}  time: {elapsed:.0f}s'
             )
 
-            print(
+            logger.info(
                 f"trn_m02:{train_avg['m_0.2']: 0.5f}  val_m02:{valid_avg['m_0.2']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m03:{train_avg['m_0.3']: 0.5f}  val_m03:{valid_avg['m_0.3']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m04:{train_avg['m_0.4']: 0.5f}  val_m04:{valid_avg['m_0.4']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m05:{train_avg['m_0.5']: 0.5f}  val_m05:{valid_avg['m_0.5']: 0.5f}"
             )
 
-            print(
+            logger.info(
                 f"trn_m02a:{train_avg['m_0.2a']: 0.5f}  val_m02a:{valid_avg['m_0.2a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m03a:{train_avg['m_0.3a']: 0.5f}  val_m03a:{valid_avg['m_0.3a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m04a:{train_avg['m_0.4a']: 0.5f}  val_m04a:{valid_avg['m_0.4a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_m05a:{train_avg['m_0.5a']: 0.5f}  val_m05a:{valid_avg['m_0.5a']: 0.5f}"
             )
 
-            print(
+            logger.info(
                 f"trn_f1_02:{train_avg['f1_0.2']: 0.5f}  val_f1_02:{valid_avg['f1_0.2']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_03:{train_avg['f1_0.3']: 0.5f}  val_f1_03:{valid_avg['f1_0.3']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_04:{train_avg['f1_0.4']: 0.5f}  val_f1_04:{valid_avg['f1_0.4']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_05:{train_avg['f1_0.5']: 0.5f}  val_f1_05:{valid_avg['f1_0.5']: 0.5f}"
             )
 
-            print(
+            logger.info(
                 f"trn_f1_02a:{train_avg['f1_0.2a']: 0.5f}  val_f1_02a:{valid_avg['f1_0.2a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_03a:{train_avg['f1_0.3a']: 0.5f}  val_f1_03a:{valid_avg['f1_0.3a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_04a:{train_avg['f1_0.4a']: 0.5f}  val_f1_04a:{valid_avg['f1_0.4a']: 0.5f}"
             )
-            print(
+            logger.info(
                 f"trn_f1_05a:{train_avg['f1_0.5a']: 0.5f}  val_f1_05a:{valid_avg['f1_0.5a']: 0.5f}"
             )
 
