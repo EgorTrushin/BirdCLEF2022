@@ -4,6 +4,7 @@
 import os
 import shutil
 import time
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,7 @@ from src.utils import (create_folds, get_device, process_data, read_config,
 from src.valid import valid_fn
 
 if __name__ == '__main__':
+    warnings.filterwarnings('ignore')
     config = read_config()
     if os.path.isdir(config["output_path"]):
         shutil.rmtree(config["output_path"])
