@@ -1,0 +1,37 @@
+data_path: "/home/egortrushin/datasets/birdclef-2022"
+output_path: "ckpt"
+seed: 71
+train_folds: [0, 1, 2, 3, 4]
+epochs: 50
+cutmix_and_mixup_epochs: 25
+train_bs: 32
+valid_bs: 128
+workers: 8
+base_model_name: "tf_efficientnet_b0_ns"
+p_spec_augmenter: 1.0
+n_mels: 128
+image_size: [128, 128]
+tqdm_disable: False
+apex: True
+target_metric: "m_0.4"
+folds:
+    n_splits: 5
+    random_state: 42
+optimizer:
+    lr: 0.001
+    weight_decay: 0.01
+lr_scheduler:
+    name: "ReduceLROnPlateau"
+    ReduceLROnPlateau:
+        mode: 'min'
+        factor: 0.31622776601
+        patience: 2
+        verbose: True
+    CosineAnnealingLR:
+        T_max: 500
+        eta_min: 0.000001
+AudioParams:
+    sr: 32000
+    duration: 5
+    fmin: 20
+    fmax: 16000
