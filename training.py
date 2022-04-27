@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
+"""Training script for BirdCLEF 2022."""
 
 import os
-import torch
-import time
-import yaml
 import shutil
+import time
 from pathlib import Path
-from src.utils import *
+
+import numpy as np
+import torch
+import yaml
+from src.data import ALL_BIRDS, AllBirdsDataset
 from src.logger import init_logger
-from src.data import AllBirdsDataset, ALL_BIRDS
 from src.model import TimmSED
 from src.train import train_fn, train_mixup_cutmix_fn
+from src.utils import (create_folds, get_device, process_data, read_config,
+                       set_seed)
 from src.valid import valid_fn
 
 if __name__ == '__main__':
@@ -20,7 +24,7 @@ if __name__ == '__main__':
     os.mkdir(config["output_path"])
     with open(Path(config["output_path"], "config.yaml"), 'w') as file_obj:
         yaml.dump(config, file_obj, default_flow_style=False)
-    df = process_data(config["data_path"])#.sample(frac=0.02).reset_index()
+    df = process_data(config["data_path"])
     df = create_folds(df, **config["folds"])
 
     logger = init_logger(log_file=Path(config["output_path"], "train.log"))
@@ -47,9 +51,9 @@ if __name__ == '__main__':
             shuffle=True)
 
         valid_dataset = AllBirdsDataset(val_df,
-                                           config["AudioParams"],
-                                           config["image_size"],
-                                           mode='valid')
+                                        config["AudioParams"],
+                                        config["image_size"],
+                                        mode='valid')
         valid_dataloader = torch.utils.data.DataLoader(
             valid_dataset,
             batch_size=config["valid_bs"],
@@ -112,7 +116,7 @@ if __name__ == '__main__':
             elapsed = time.time() - start_time
 
             logger.info(
-                f'Epoch {epoch+1} - avg_train_loss: {train_loss:.5f}  avg_val_loss: {valid_loss:.5f}  time: {elapsed:.0f}s'
+                f'Epoch {epoch+1} - train_loss: {train_loss:.5f}  val_loss: {valid_loss:.5f}  time: {elapsed:.0f}s'
             )
             logger.info(
                 f"trn_02:{train_avg['m_0.2']: 0.5f}  val_02:{valid_avg['m_0.2']: 0.5f}"
