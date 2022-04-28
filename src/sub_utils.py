@@ -461,18 +461,55 @@ class TestDataset(torch.utils.data.Dataset):
         self.df = df
         self.clip = np.concatenate([clip, clip, clip])
         self.AudioParams = AudioParams
+        self.image_size = image_size
 
         mean = (0.485, 0.456, 0.406)  # RGB
         std = (0.229, 0.224, 0.225)  # RGB
 
-        self.albu_transforms = {
-            "valid": A.Compose(
-                [
-                    A.Resize(image_size[0], image_size[1]),
-                    A.Normalize(mean, std),
-                ]
-            ),
-        }
+        if len(image_size) > 1:
+            self.albu_transforms = {
+                "train": A.Compose(
+                    [
+                        A.HorizontalFlip(p=0.5),
+                        A.OneOf(
+                            [
+                                A.Cutout(max_h_size=5, max_w_size=16),
+                                A.CoarseDropout(max_holes=4),
+                            ],
+                            p=0.5,
+                        ),
+                        A.Normalize(mean, std),
+                    ]
+                ),
+                "valid": A.Compose(
+                    [
+                        A.Normalize(mean, std),
+                    ]
+                ),
+            }
+        else:
+            self.albu_transforms = {
+                "train": A.Compose(
+                    [
+                        A.HorizontalFlip(p=0.5),
+                        A.OneOf(
+                            [
+                                A.Cutout(max_h_size=5, max_w_size=16),
+                                A.CoarseDropout(max_holes=4),
+                            ],
+                            p=0.5,
+                        ),
+                        A.Resize(image_size[0], image_size[1]),
+                        A.Normalize(mean, std),
+                    ]
+                ),
+                "valid": A.Compose(
+                    [
+                        A.Resize(image_size[0], image_size[1]),
+                        A.Normalize(mean, std),
+                    ]
+                ),
+            }
 
     def __len__(self):
         return len(self.df)

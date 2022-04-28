@@ -750,36 +750,3 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             "image": image,
             "targets": targets,
         }
-
-
-class TestDataset(torch.utils.data.Dataset):
-    def __init__(self, df, clip, AudioParams):
-        self.df = df
-        self.clip = np.concatenate([clip, clip, clip])
-        self.AudioParams = AudioParams
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx: int):
-        sample = self.df.loc[idx, :]
-        row_id = sample.row_id
-
-        end_seconds = int(sample.seconds)
-        start_seconds = int(end_seconds - 5)
-
-        image = self.clip[self.AudioParams["sr"] * start_seconds : self.AudioParams["sr"] * end_seconds].astype(
-            np.float32
-        )
-        image = np.nan_to_num(image)
-
-        image = compute_melspec(image, self.AudioParams)
-        image = mono_to_color(image)
-        image = image.astype(np.uint8)
-
-        image = albu_transforms["valid"](image=image)["image"].T
-
-        return {
-            "image": image,
-            "row_id": row_id,
-        }
