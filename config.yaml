@@ -10,7 +10,7 @@ workers: 8
 base_model_name: "tf_efficientnet_b0_ns"
 p_spec_augmenter: 1.0
 n_mels: 128
-image_size: [128, 128]
+image_size: (128, 128)
 tqdm_disable: False
 apex: True
 target_metric: "m_0.4"
