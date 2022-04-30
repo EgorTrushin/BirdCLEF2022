@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Training script for BirdCLEF 2022."""
 
+import glob
 import os
 import shutil
 import time
 import warnings
 from pathlib import Path
 
+import librosa
 import numpy as np
+import pandas as pd
 import torch
 import yaml
 from src.data import ALL_BIRDS, AllBirdsDataset
@@ -26,6 +29,18 @@ if __name__ == "__main__":
     with open(Path(config["output_path"], "config.yaml"), "w") as file_obj:
         yaml.dump(config, file_obj, default_flow_style=False)
     df = process_data(config["data_path"])
+
+    if config["nocall_path"] is not None:
+        nocall = glob.glob(config["nocall_path"] + "/*/*/*.wav")
+        print(config["nocall_path"] + "/*/*/*.wav")
+        print(nocall)
+        df_nocall = pd.DataFrame()
+        df_nocall["file_path"] = nocall
+        df_nocall["new_target"] = "nocall"
+        df_nocall["primary_label"] = "nocall"
+        df = pd.concat([df, df_nocall]).reset_index()
+        ALL_BIRDS.append("nocall")
+
     df = create_folds(df, **config["folds"])
 
     logger = init_logger(log_file=Path(config["output_path"], "train.log"))
