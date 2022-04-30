@@ -32,8 +32,6 @@ if __name__ == "__main__":
 
     if config["nocall_path"] is not None:
         nocall = glob.glob(config["nocall_path"] + "/*/*/*.wav")
-        print(config["nocall_path"] + "/*/*/*.wav")
-        print(nocall)
         df_nocall = pd.DataFrame()
         df_nocall["file_path"] = nocall
         df_nocall["new_target"] = "nocall"
