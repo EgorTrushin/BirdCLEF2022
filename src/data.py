@@ -7,7 +7,6 @@ import colorednoise as cn
 import numpy as np
 import pandas as pd
 import torch
-import soundfile as sf
 
 from argparse import Namespace
 
@@ -574,7 +573,7 @@ class ScoredBirdsDataset(torch.utils.data.Dataset):
         wav_path = sample["file_path"]
         labels = sample["new_target"]
 
-        y, sr = sf.read(wav_path)
+        y, sr = librosa.load(wav_path, sr=self.AudioParams["sr"])
         if len(y.shape) > 1:  # there are (X, 2) arrays
             y = np.mean(y, 1)
 
@@ -707,7 +706,7 @@ class AllBirdsDataset(torch.utils.data.Dataset):
         wav_path = sample["file_path"]
         labels = sample["new_target"]
 
-        y, sr = sf.read(wav_path)
+        y, sr = librosa.load(wav_path, sr=self.AudioParams["sr"])
         if len(y.shape) > 1:  # there are (X, 2) arrays
             y = np.mean(y, 1)
 
