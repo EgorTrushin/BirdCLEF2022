@@ -30,7 +30,7 @@ if __name__ == "__main__":
         yaml.dump(config, file_obj, default_flow_style=False)
     df = process_data(config["data_path"])
 
-    if config["nocall_path"] is not None:
+    if config["nocall_path"]:
         nocall = glob.glob(config["nocall_path"] + "/*/*/*.wav")
         df_nocall = pd.DataFrame()
         df_nocall["file_path"] = nocall
