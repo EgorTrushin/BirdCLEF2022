@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Training script for BirdCLEF 2022."""
 
+import glob
 from argparse import Namespace
 from pathlib import Path
 
-import glob
 import albumentations as A
 import librosa
 import numpy as np
@@ -41,15 +41,11 @@ config = Namespace(
     model=Namespace(
         p_spec_augmenter=1.0,
         n_mels=128,
-        base_model=Namespace(
-            model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3
-        ),
+        base_model=Namespace(model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3),
         optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
         scheduler=Namespace(
             name="CosineAnnealingLR",
-            scheduler_params={
-                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}
-            },
+            scheduler_params={"CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}},
         ),
     ),
     es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
@@ -92,11 +88,9 @@ class TestDataset(torch.utils.data.Dataset):
         end_seconds = int(sample.seconds)
         start_seconds = int(end_seconds - 5)
 
-        image = self.clip[
-            self.AudioParams["sr"]
-            * start_seconds : self.AudioParams["sr"]
-            * end_seconds
-        ].astype(np.float32)
+        image = self.clip[self.AudioParams["sr"] * start_seconds : self.AudioParams["sr"] * end_seconds].astype(
+            np.float32
+        )
         image = np.nan_to_num(image)
 
         image = compute_melspec(image, self.AudioParams)
@@ -111,9 +105,7 @@ class TestDataset(torch.utils.data.Dataset):
         }
 
 
-def prediction_for_clip(
-    test_df, clip, models, config, threshold=0.05, threshold_long=None
-):
+def prediction_for_clip(test_df, clip, models, config, threshold=0.05, threshold_long=None):
 
     dataset = TestDataset(
         df=test_df,
@@ -134,16 +126,13 @@ def prediction_for_clip(
             for model in models:
                 with torch.cuda.amp.autocast():
                     output = model(image)
-                probas.append(
-                    output["clipwise_output"].detach().cpu().numpy().reshape(-1)
-                )
+                probas.append(output["clipwise_output"].detach().cpu().numpy().reshape(-1))
             probas = np.array(probas)
         if threshold_long is None:
             events = probas.mean(0) >= threshold
         else:
             events = (
-                (probas.mean(0) >= threshold).astype(int)
-                + (probas_long.mean(0) >= threshold_long).astype(int)
+                (probas.mean(0) >= threshold).astype(int) + (probas_long.mean(0) >= threshold_long).astype(int)
             ) >= 2
         labels = np.argwhere(events).reshape(-1).tolist()
         if len(labels) == 0:

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 import pytorch_lightning as pl
 import random
 
@@ -450,9 +449,7 @@ def crop_or_pad(y, length, sr, train=True, probs=None):
         elif probs is None:
             start = np.random.randint(len(y) - length)
         else:
-            start = (
-                np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
-            )
+            start = np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
             start = int(sr * (start))
 
         y = y[start : start + length]
@@ -576,9 +573,7 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             if self.wave_transforms:
                 y = self.wave_transforms(y, sr=self.AudioParams["sr"])
 
-        y = np.concatenate([y, y, y])[
-            : self.AudioParams["duration"] * self.AudioParams["sr"]
-        ]
+        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
         y = crop_or_pad(
             y,
             self.AudioParams["duration"] * self.AudioParams["sr"],
