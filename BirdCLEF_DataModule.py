@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
+
+import pytorch_lightning as pl
 import random
 
 import librosa
 import colorednoise as cn
 import numpy as np
-import pandas as pd
 import torch
 
-from argparse import Namespace
+from torch.utils.data import DataLoader
 
 import albumentations as A
 
@@ -435,7 +436,8 @@ def crop_or_pad(y, length, sr, train=True, probs=None):
         length {int} -- Length of the crop
         sr {int} -- Sampling rate
     Keyword Arguments:
-        train {bool} -- Whether we are at train time. If so, crop randomly, else return the beginning of y (default: {True})
+        train {bool} -- Whether we are at train time. If so, crop randomly,
+                        else return the beginning of y (default: {True})
         probs {None or numpy array} -- Probabilities to use to chose where to crop (default: {None})
     Returns:
         1D np array -- Cropped array
@@ -448,7 +450,9 @@ def crop_or_pad(y, length, sr, train=True, probs=None):
         elif probs is None:
             start = np.random.randint(len(y) - length)
         else:
-            start = np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
+            start = (
+                np.random.choice(np.arange(len(probs)), p=probs) + np.random.random()
+            )
             start = int(sr * (start))
 
         y = y[start : start + length]
@@ -488,8 +492,8 @@ def mono_to_color(X, eps=1e-6, mean=None, std=None):
     return V
 
 
-class ScoredBirdsDataset(torch.utils.data.Dataset):
-    def __init__(self, df, AudioParams, image_size, mode="train"):
+class AllBirdsDataset(torch.utils.data.Dataset):
+    def __init__(self, df, AudioParams, mode="train"):
         self.df = df
         self.AudioParams = AudioParams
         self.mode = mode
@@ -497,184 +501,27 @@ class ScoredBirdsDataset(torch.utils.data.Dataset):
         mean = (0.485, 0.456, 0.406)  # RGB
         std = (0.229, 0.224, 0.225)  # RGB
 
-        if len(image_size) > 1:
-            self.albu_transforms = {
-                "train": A.Compose(
-                    [
-                        A.HorizontalFlip(p=0.5),
-                        A.OneOf(
-                            [
-                                A.Cutout(max_h_size=5, max_w_size=16),
-                                A.CoarseDropout(max_holes=4),
-                            ],
-                            p=0.5,
-                        ),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-                "valid": A.Compose(
-                    [
-                        A.Normalize(mean, std),
-                    ]
-                ),
-            }
-        else:
-            self.albu_transforms = {
-                "train": A.Compose(
-                    [
-                        A.HorizontalFlip(p=0.5),
-                        A.OneOf(
-                            [
-                                A.Cutout(max_h_size=5, max_w_size=16),
-                                A.CoarseDropout(max_holes=4),
-                            ],
-                            p=0.5,
-                        ),
-                        A.Resize(image_size[0], image_size[1]),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-                "valid": A.Compose(
-                    [
-                        A.Resize(image_size[0], image_size[1]),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-            }
-
-        if mode == "train":
-            self.wave_transforms = Compose(
+        self.albu_transforms = {
+            "train": A.Compose(
                 [
-                    OneOf(
+                    A.HorizontalFlip(p=0.5),
+                    A.OneOf(
                         [
-                            NoiseInjection(p=1, max_noise_level=0.04),
-                            GaussianNoise(p=1, min_snr=5, max_snr=20),
-                            PinkNoise(p=1, min_snr=5, max_snr=20),
+                            A.Cutout(max_h_size=5, max_w_size=16),
+                            A.CoarseDropout(max_holes=4),
                         ],
-                        p=0.2,
+                        p=0.5,
                     ),
-                    RandomVolume(p=0.2, limit=4),
-                    Normalize(p=1),
+                    A.Normalize(mean, std),
                 ]
-            )
-        else:
-            self.wave_transforms = Compose(
+            ),
+            "valid": A.Compose(
                 [
-                    Normalize(p=1),
+                    A.Normalize(mean, std),
                 ]
-            )
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx: int):
-        sample = self.df.loc[idx, :]
-
-        wav_path = sample["file_path"]
-        labels = sample["new_target"]
-
-        y, sr = librosa.load(wav_path, sr=self.AudioParams["sr"])
-        if len(y.shape) > 1:  # there are (X, 2) arrays
-            y = np.mean(y, 1)
-
-        len_y = len(y)
-        effective_length = sr * self.AudioParams["duration"]
-        if len_y < effective_length:
-            new_y = np.zeros(effective_length, dtype=y.dtype)
-            start = np.random.randint(effective_length - len_y)
-            new_y[start : start + len_y] = y
-            y = new_y.astype(np.float32)
-        elif len_y > effective_length:
-            start = np.random.randint(len_y - effective_length)
-            y = y[start : start + effective_length].astype(np.float32)
-        else:
-            y = y.astype(np.float32)
-
-        if len(y) > 0:
-            y = y[: self.AudioParams["duration"] * self.AudioParams["sr"]]
-
-            if self.wave_transforms:
-                y = self.wave_transforms(y, sr=self.AudioParams["sr"])
-
-        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
-        y = crop_or_pad(
-            y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None
-        )
-        image = compute_melspec(y, self.AudioParams)
-        image = mono_to_color(image)
-        image = image.astype(np.uint8)
-
-        image = self.albu_transforms[self.mode](image=image)["image"]
-        image = image.T
-
-        targets = np.zeros(len(SCORED_BIRDS) + 1, dtype=float)
-
-        for ebird_code in labels.split():
-            if ebird_code in SCORED_BIRDS:
-                targets[SCORED_BIRDS.index(ebird_code)] = 1.0
-            else:
-                targets[len(SCORED_BIRDS)] = 1.0
-
-        return {
-            "image": image,
-            "targets": targets,
+            ),
         }
 
-
-class AllBirdsDataset(torch.utils.data.Dataset):
-    def __init__(self, df, AudioParams, image_size, mode="train"):
-        self.df = df
-        self.AudioParams = AudioParams
-        self.mode = mode
-
-        mean = (0.485, 0.456, 0.406)  # RGB
-        std = (0.229, 0.224, 0.225)  # RGB
-
-        if len(image_size) > 1:
-            self.albu_transforms = {
-                "train": A.Compose(
-                    [
-                        A.HorizontalFlip(p=0.5),
-                        A.OneOf(
-                            [
-                                A.Cutout(max_h_size=5, max_w_size=16),
-                                A.CoarseDropout(max_holes=4),
-                            ],
-                            p=0.5,
-                        ),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-                "valid": A.Compose(
-                    [
-                        A.Normalize(mean, std),
-                    ]
-                ),
-            }
-        else:
-            self.albu_transforms = {
-                "train": A.Compose(
-                    [
-                        A.HorizontalFlip(p=0.5),
-                        A.OneOf(
-                            [
-                                A.Cutout(max_h_size=5, max_w_size=16),
-                                A.CoarseDropout(max_holes=4),
-                            ],
-                            p=0.5,
-                        ),
-                        A.Resize(image_size[0], image_size[1]),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-                "valid": A.Compose(
-                    [
-                        A.Resize(image_size[0], image_size[1]),
-                        A.Normalize(mean, std),
-                    ]
-                ),
-            }
-
         if mode == "train":
             self.wave_transforms = Compose(
                 [
@@ -706,12 +553,12 @@ class AllBirdsDataset(torch.utils.data.Dataset):
         wav_path = sample["file_path"]
         labels = sample["new_target"]
 
-        y, sr = librosa.load(wav_path, sr=self.AudioParams["sr"])
+        y, _ = librosa.load(wav_path, sr=self.AudioParams["sr"])
         if len(y.shape) > 1:  # there are (X, 2) arrays
             y = np.mean(y, 1)
 
         len_y = len(y)
-        effective_length = sr * self.AudioParams["duration"]
+        effective_length = self.AudioParams["sr"] * self.AudioParams["duration"]
         if len_y < effective_length:
             new_y = np.zeros(effective_length, dtype=y.dtype)
             start = np.random.randint(effective_length - len_y)
@@ -729,9 +576,15 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             if self.wave_transforms:
                 y = self.wave_transforms(y, sr=self.AudioParams["sr"])
 
-        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
+        y = np.concatenate([y, y, y])[
+            : self.AudioParams["duration"] * self.AudioParams["sr"]
+        ]
         y = crop_or_pad(
-            y, self.AudioParams["duration"] * self.AudioParams["sr"], sr=self.AudioParams["sr"], train=True, probs=None
+            y,
+            self.AudioParams["duration"] * self.AudioParams["sr"],
+            sr=self.AudioParams["sr"],
+            train=True,
+            probs=None,
         )
         image = compute_melspec(y, self.AudioParams)
         image = mono_to_color(image)
@@ -749,3 +602,46 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             "image": image,
             "targets": targets,
         }
+
+
+class BirdCLEFDataModule(pl.LightningDataModule):
+    def __init__(self, train_df, val_df, config):
+        super().__init__()
+        self.save_hyperparameters()
+        self.train_df = train_df
+        self.val_df = val_df
+        self.config = config
+
+    def setup(self, stage=None):
+
+        # Create train dataset
+        self.train_dataset = AllBirdsDataset(
+            self.train_df,
+            self.config.AudioParams,
+            mode="train",
+        )
+
+        # Create val dataset
+        self.val_dataset = AllBirdsDataset(
+            self.val_df,
+            self.config.AudioParams,
+            mode="valid",
+        )
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.config.train_bs,
+            num_workers=self.config.workers,
+            shuffle=True,
+            pin_memory=False,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.config.valid_bs,
+            num_workers=self.config.workers,
+            shuffle=False,
+            pin_memory=False,
+        )

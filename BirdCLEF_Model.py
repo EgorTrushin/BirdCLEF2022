@@ -7,7 +7,56 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import pytorch_lightning as pl
 from torchlibrosa.augmentation import SpecAugmentation
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from sklearn import metrics
+
+
+def loss_fn(logits, targets):
+    loss_fct = BCEFocal2WayLoss()
+    loss = loss_fct(logits, targets)
+    return loss
+
+
+# https://www.kaggle.com/c/rfcx-species-audio-detection/discussion/213075
+class BCEFocalLoss(nn.Module):
+    def __init__(self, alpha=0.25, gamma=2.0):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+
+    def forward(self, preds, targets):
+        bce_loss = nn.BCEWithLogitsLoss(reduction="none")(preds, targets)
+        probas = torch.sigmoid(preds)
+        loss = (
+            targets * self.alpha * (1.0 - probas) ** self.gamma * bce_loss
+            + (1.0 - targets) * probas**self.gamma * bce_loss
+        )
+        loss = loss.mean()
+        return loss
+
+
+class BCEFocal2WayLoss(nn.Module):
+    def __init__(self, weights=[1, 1], class_weights=None):
+        super().__init__()
+
+        self.focal = BCEFocalLoss()
+
+        self.weights = weights
+
+    def forward(self, input, target):
+        input_ = input["logit"]
+        target = target.float()
+
+        framewise_output = input["framewise_logit"]
+        clipwise_output_with_max, _ = framewise_output.max(dim=1)
+
+        loss = self.focal(input_, target)
+        aux_loss = self.focal(clipwise_output_with_max, target)
+
+        return self.weights[0] * loss + self.weights[1] * aux_loss
 
 
 def init_layer(layer):
@@ -65,7 +114,10 @@ def pad_framewise_output(framewise_output: torch.Tensor, frames_num: int):
       output: (batch_size, frames_num, classes_num)
     """
     output = F.interpolate(
-        framewise_output.unsqueeze(1), size=(frames_num, framewise_output.size(2)), align_corners=True, mode="bilinear"
+        framewise_output.unsqueeze(1),
+        size=(frames_num, framewise_output.size(2)),
+        align_corners=True,
+        mode="bilinear",
     ).squeeze(1)
 
     return output
@@ -77,10 +129,20 @@ class AttBlockV2(nn.Module):
 
         self.activation = activation
         self.att = nn.Conv1d(
-            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True,
         )
         self.cla = nn.Conv1d(
-            in_channels=in_features, out_channels=out_features, kernel_size=1, stride=1, padding=0, bias=True
+            in_channels=in_features,
+            out_channels=out_features,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            bias=True,
         )
 
         self.init_weights()
@@ -103,21 +165,23 @@ class AttBlockV2(nn.Module):
             return torch.sigmoid(x)
 
 
-class TimmSED(nn.Module):
-    def __init__(
-        self, base_model_name: str, pretrained=True, num_classes=24, in_channels=3, n_mels=224, p_spec_augmenter=1.0
-    ):
+class BirdCLEFModel(pl.LightningModule):
+    def __init__(self, config):
         super().__init__()
+        self.config = config
 
-        self.p_spec_augmenter = p_spec_augmenter
+        self.p_spec_augmenter = config.p_spec_augmenter
 
         self.spec_augmenter = SpecAugmentation(
-            time_drop_width=64 // 2, time_stripes_num=2, freq_drop_width=8 // 2, freq_stripes_num=2
+            time_drop_width=64 // 2,
+            time_stripes_num=2,
+            freq_drop_width=8 // 2,
+            freq_stripes_num=2,
         )
 
-        self.bn0 = nn.BatchNorm2d(n_mels)
+        self.bn0 = nn.BatchNorm2d(config.n_mels)
 
-        base_model = timm.create_model(base_model_name, pretrained=pretrained, in_chans=in_channels)
+        base_model = timm.create_model(**vars(config.base_model))
         layers = list(base_model.children())[:-2]
         self.encoder = nn.Sequential(*layers)
 
@@ -127,7 +191,7 @@ class TimmSED(nn.Module):
             in_features = base_model.classifier.in_features
 
         self.fc1 = nn.Linear(in_features, in_features, bias=True)
-        self.att_block = AttBlockV2(in_features, num_classes, activation="sigmoid")
+        self.att_block = AttBlockV2(in_features, 152, activation="sigmoid")
 
         self.init_weight()
 
@@ -135,8 +199,7 @@ class TimmSED(nn.Module):
         init_bn(self.bn0)
         init_layer(self.fc1)
 
-    def forward(self, input_data):
-        x = input_data  # (batch_size, 3, time_steps, mel_bins)
+    def forward(self, x):
 
         frames_num = x.shape[2]
 
@@ -187,3 +250,40 @@ class TimmSED(nn.Module):
         }
 
         return output_dict
+
+    def training_step(self, batch, batch_idx):
+        images = batch["image"]
+        labels = batch["targets"]
+        logits = self(images)  # .squeeze(1)
+        loss = loss_fn(logits, labels.float())
+        y_true = labels.cpu().numpy()
+        y_pred = logits["clipwise_output"].cpu().detach().numpy()
+        score = metrics.f1_score(y_true, y_pred > 0.3, average="micro")
+        self.log("train_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train_score", score, on_step=False, on_epoch=True, prog_bar=True)
+        for param_group in self.trainer.optimizers[0].param_groups:
+            lr = param_group["lr"]
+        self.log("lr", lr, on_step=True, on_epoch=False, prog_bar=True)
+        return {"loss": loss, "train_score": score}
+
+    def validation_step(self, batch, batch_idx):
+        images = batch["image"]
+        labels = batch["targets"]
+        logits = self(images)  # .squeeze(1)
+        loss = loss_fn(logits, labels.float())
+        y_true = labels.cpu().numpy()
+        y_pred = logits["clipwise_output"].cpu().detach().numpy()
+        score = metrics.f1_score(y_true, y_pred > 0.3, average="micro")
+        self.log("val_loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_score", score, on_step=False, on_epoch=True, prog_bar=True)
+        return {"loss": loss, "val_score": score}
+
+    def configure_optimizers(self):
+        optimizer = AdamW(self.parameters(), **self.config.optimizer_params)
+        if self.config.scheduler.name == "CosineAnnealingLR":
+            scheduler = CosineAnnealingLR(
+                optimizer,
+                **self.config.scheduler.scheduler_params[self.config.scheduler.name],
+            )
+            lr_scheduler_dict = {"scheduler": scheduler, "interval": "step"}
+            return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_dict}
