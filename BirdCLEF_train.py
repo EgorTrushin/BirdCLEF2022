@@ -27,6 +27,7 @@ config = Namespace(
             "sr": 32000,
             "fmin": 20,
             "fmax": 16000,
+            "n_mels": 128,
             "hop_length": 512,
         },
     ),
@@ -41,12 +42,15 @@ config = Namespace(
     ),
     model=Namespace(
         p_spec_augmenter=0.25,
-        n_mels=128,
         base_model=Namespace(model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3),
+        SpecAugmentation=Namespace(time_drop_width=64, time_stripes_num=2, freq_drop_width=8, freq_stripes_num=2),
         optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
         scheduler=Namespace(
             name="CosineAnnealingLR",
-            scheduler_params={"CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}},
+            params={
+                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1},
+                "ReduceLROnPlateau": {"mode": "min", "factor": 0.31622776601, "patience": 4, "verbose": True},
+            },
         ),
     ),
     es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
@@ -59,7 +63,7 @@ config = Namespace(
     },
 )
 
-config.data_module.AudioParams["n_mels"] = config.model.n_mels
+config.model.n_mels = config.data_module.AudioParams["n_mels"]
 
 
 def process_data(data_path):

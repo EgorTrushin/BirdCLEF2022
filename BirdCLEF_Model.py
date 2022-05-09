@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchlibrosa.augmentation import SpecAugmentation
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
 from sklearn import metrics
 
 
@@ -172,12 +172,7 @@ class BirdCLEFModel(pl.LightningModule):
 
         self.p_spec_augmenter = config.p_spec_augmenter
 
-        self.spec_augmenter = SpecAugmentation(
-            time_drop_width=64 // 2,
-            time_stripes_num=2,
-            freq_drop_width=8 // 2,
-            freq_stripes_num=2,
-        )
+        self.spec_augmenter = SpecAugmentation(**vars(config.SpecAugmentation))
 
         self.bn0 = nn.BatchNorm2d(config.n_mels)
 
@@ -283,7 +278,14 @@ class BirdCLEFModel(pl.LightningModule):
         if self.config.scheduler.name == "CosineAnnealingLR":
             scheduler = CosineAnnealingLR(
                 optimizer,
-                **self.config.scheduler.scheduler_params[self.config.scheduler.name],
+                **self.config.scheduler.params[self.config.scheduler.name],
             )
             lr_scheduler_dict = {"scheduler": scheduler, "interval": "step"}
             return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_dict}
+        elif self.config.scheduler.name == "ReduceLROnPlateau":
+            scheduler = ReduceLROnPlateau(
+                optimizer,
+                **self.config.scheduler.params[self.config.scheduler.name],
+            )
+            lr_scheduler = {"scheduler": scheduler, "monitor": "val_loss"}
+            return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}
