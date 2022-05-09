@@ -32,7 +32,8 @@ config = Namespace(
     ),
     trainer=Namespace(
         gpus=1,
-        max_epochs=50,
+        max_epochs=100,
+        min_epochs=50,
         precision=16,
         deterministic=True,
         stochastic_weight_avg=False,
