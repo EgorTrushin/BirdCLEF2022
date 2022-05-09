@@ -181,13 +181,13 @@ class BirdCLEFModel(pl.LightningModule):
         self.config = config
         self.loss = BCEFocal2WayLoss()
 
-        self.p_spec_augmenter = config.p_spec_augmenter
+        self.p_spec_augmenter = config["p_spec_augmenter"]
 
-        self.spec_augmenter = SpecAugmentation(**vars(config.SpecAugmentation))
+        self.spec_augmenter = SpecAugmentation(**config["SpecAugmentation"])
 
-        self.bn0 = nn.BatchNorm2d(config.n_mels)
+        self.bn0 = nn.BatchNorm2d(config["n_mels"])
 
-        base_model = timm.create_model(**vars(config.base_model))
+        base_model = timm.create_model(**config["base_model"])
         layers = list(base_model.children())[:-2]
         self.encoder = nn.Sequential(*layers)
 
@@ -261,8 +261,8 @@ class BirdCLEFModel(pl.LightningModule):
         images = batch["image"]
         labels = batch["targets"]
 
-        if self.current_epoch < self.config.mixup_epochs:
-            inputs, new_targets = mixup(images, labels, self.config.mixup_alpha)
+        if self.current_epoch < self.config["mixup_epochs"]:
+            inputs, new_targets = mixup(images, labels, self.config["mixup_alpha"])
             logits = self(inputs)
             loss = mixup_criterion(logits, new_targets, self.loss)
         else:
@@ -283,7 +283,7 @@ class BirdCLEFModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         images = batch["image"]
         labels = batch["targets"]
-        logits = self(images)  # .squeeze(1)
+        logits = self(images)
         loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
         y_pred = logits["clipwise_output"].cpu().detach().numpy()
@@ -293,18 +293,18 @@ class BirdCLEFModel(pl.LightningModule):
         return {"loss": loss, "val_score": score}
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.parameters(), **self.config.optimizer_params)
-        if self.config.scheduler.name == "CosineAnnealingLR":
+        optimizer = AdamW(self.parameters(), **self.config["optimizer_params"])
+        if self.config["scheduler"]["name"] == "CosineAnnealingLR":
             scheduler = CosineAnnealingLR(
                 optimizer,
-                **self.config.scheduler.params[self.config.scheduler.name],
+                **self.config["scheduler"]["params"][self.config["scheduler"]["name"]],
             )
             lr_scheduler_dict = {"scheduler": scheduler, "interval": "step"}
             return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_dict}
-        elif self.config.scheduler.name == "ReduceLROnPlateau":
+        elif self.config["scheduler"]["name"] == "ReduceLROnPlateau":
             scheduler = ReduceLROnPlateau(
                 optimizer,
-                **self.config.scheduler.params[self.config.scheduler.name],
+                **self.config["scheduler"]["params"][self.config["scheduler"]["name"]],
             )
             lr_scheduler = {"scheduler": scheduler, "monitor": "val_loss"}
             return {"optimizer": optimizer, "lr_scheduler": lr_scheduler}

@@ -3,6 +3,7 @@
 
 import ast
 import gc
+import yaml
 from argparse import Namespace
 from pathlib import Path
 
@@ -13,59 +14,6 @@ from BirdCLEF_DataModule import BirdCLEFDataModule
 from BirdCLEF_Model import BirdCLEFModel
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.model_selection import StratifiedKFold
-
-config = Namespace(
-    data_path="/home/egortrushin/datasets/birdclef-2022",
-    folds=Namespace(n_splits=5, random_state=42),
-    train_folds=[0],
-    seed=71,
-    data_module=Namespace(
-        train_bs=32,
-        valid_bs=128,
-        workers=8,
-        AudioParams={
-            "sr": 32000,
-            "fmin": 20,
-            "fmax": 16000,
-            "n_mels": 128,
-            "hop_length": 512,
-        },
-    ),
-    trainer=Namespace(
-        gpus=1,
-        max_epochs=100,
-        min_epochs=50,
-        precision=16,
-        deterministic=True,
-        stochastic_weight_avg=False,
-        progress_bar_refresh_rate=1,
-    ),
-    model=Namespace(
-        p_spec_augmenter=0.25,
-        mixup_epochs=18,
-        mixup_alpha=0.4,
-        base_model=Namespace(model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3),
-        SpecAugmentation=Namespace(time_drop_width=64, time_stripes_num=2, freq_drop_width=8, freq_stripes_num=2),
-        optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
-        scheduler=Namespace(
-            name="CosineAnnealingLR",
-            params={
-                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1},
-                "ReduceLROnPlateau": {"mode": "min", "factor": 0.31622776601, "patience": 4, "verbose": True},
-            },
-        ),
-    ),
-    es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
-    ckpt_callback={
-        "monitor": "val_score",
-        "dirpath": "ckpts",
-        "mode": "max",
-        "save_top_k": 1,
-        "verbose": 1,
-    },
-)
-
-config.model.n_mels = config.data_module.AudioParams["n_mels"]
 
 
 def process_data(data_path):
@@ -87,34 +35,34 @@ def create_folds(df, **kwargs):
 
 
 if __name__ == "__main__":
-    df = process_data(config.data_path)
-    df = create_folds(df, **vars(config.folds))
+    with open("config.yaml", "r") as file_obj:
+        config = yaml.safe_load(file_obj)
+    config["model"]["n_mels"] = config["data_module"]["AudioParams"]["n_mels"]
+
+    df = process_data(config["data_path"])
+    df = create_folds(df, **config["folds"])
 
     gc.enable()
 
-    pl.seed_everything(config.seed)
+    pl.seed_everything(config["seed"])
 
-    for fold in config.train_folds:
+    for fold in config["train_folds"]:
         print(f"\n###### Fold {fold}")
 
         train_df = df[df.kfold != fold].reset_index(drop=True)
         valid_df = df[df.kfold == fold].reset_index(drop=True)
 
-        data_module = BirdCLEFDataModule(train_df, valid_df, config.data_module)
+        data_module = BirdCLEFDataModule(train_df, valid_df, config["data_module"])
 
         chkpt_callback = ModelCheckpoint(
             filename=f"f{fold}-{{val_score:.5f}}-{{val_loss:.5f}}",
-            **config.ckpt_callback,
+            **config["ckpt_callback"],
         )
-        es_callback = EarlyStopping(**config.es_callback)
+        es_callback = EarlyStopping(config["es_callback"])
 
-        trainer = pl.Trainer(
-            callbacks=[chkpt_callback, es_callback],
-            logger=None,
-            **vars(config.trainer),
-        )
+        trainer = pl.Trainer(callbacks=[chkpt_callback, es_callback], logger=None, **config["trainer"])
 
-        model = BirdCLEFModel(config.model)
+        model = BirdCLEFModel(config["model"])
         trainer.fit(model, data_module)
 
         del data_module, trainer, model, chkpt_callback, es_callback

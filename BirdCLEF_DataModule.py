@@ -605,22 +605,22 @@ class BirdCLEFDataModule(pl.LightningDataModule):
         # Create train dataset
         self.train_dataset = AllBirdsDataset(
             self.train_df,
-            self.config.AudioParams,
+            self.config["AudioParams"],
             mode="train",
         )
 
         # Create val dataset
         self.val_dataset = AllBirdsDataset(
             self.val_df,
-            self.config.AudioParams,
+            self.config["AudioParams"],
             mode="valid",
         )
 
     def train_dataloader(self):
         return DataLoader(
             self.train_dataset,
-            batch_size=self.config.train_bs,
-            num_workers=self.config.workers,
+            batch_size=self.config["train_bs"],
+            num_workers=self.config["workers"],
             shuffle=True,
             pin_memory=False,
         )
@@ -628,8 +628,8 @@ class BirdCLEFDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.config.valid_bs,
-            num_workers=self.config.workers,
+            batch_size=self.config["valid_bs"],
+            num_workers=self.config["workers"],
             shuffle=False,
             pin_memory=False,
         )
