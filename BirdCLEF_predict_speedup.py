@@ -6,7 +6,6 @@ from argparse import Namespace
 from pathlib import Path
 
 import albumentations as A
-import librosa
 import numpy as np
 import pandas as pd
 import soundfile as sf
@@ -15,39 +14,44 @@ from BirdCLEF_DataModule import ALL_BIRDS, compute_melspec, mono_to_color
 from BirdCLEF_Model import BirdCLEFModel
 
 config = Namespace(
-    data_path="/home/woody/bctc/bctc33/birdclef/birdclef-2022",
+    data_path="/home/egortrushin/datasets/birdclef-2022",
     folds=Namespace(n_splits=5, random_state=42),
     train_folds=[0],
     seed=71,
     data_module=Namespace(
-        train_bs=32,
-        valid_bs=128,
+        train_bs=16,
+        valid_bs=16,
         workers=8,
         AudioParams={
             "sr": 32000,
-            "duration": 5,
             "fmin": 20,
             "fmax": 16000,
+            "n_mels": 256,
+            "hop_length": 256,
         },
     ),
     trainer=Namespace(
         gpus=1,
-        max_epochs=50,
+        max_epochs=100,
+        min_epochs=50,
         precision=16,
         deterministic=True,
         stochastic_weight_avg=False,
-        progress_bar_refresh_rate=100,
-        # limit_train_batches=0.1,
-        # limit_val_batches=0.1,
+        progress_bar_refresh_rate=1,
     ),
     model=Namespace(
-        p_spec_augmenter=1.0,
-        n_mels=224,
-        base_model=Namespace(model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3),
+        p_spec_augmenter=0.25,
+        mixup_epochs=18,
+        mixup_alpha=0.4,
+        base_model=Namespace(model_name="tf_efficientnet_b1_ns", pretrained=True, in_chans=3),
+        SpecAugmentation=Namespace(time_drop_width=64, time_stripes_num=2, freq_drop_width=8, freq_stripes_num=2),
         optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
         scheduler=Namespace(
             name="CosineAnnealingLR",
-            scheduler_params={"CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}},
+            params={
+                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1},
+                "ReduceLROnPlateau": {"mode": "min", "factor": 0.31622776601, "patience": 4, "verbose": True},
+            },
         ),
     ),
     es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
@@ -55,10 +59,12 @@ config = Namespace(
         "monitor": "val_score",
         "dirpath": "ckpts",
         "mode": "max",
-        "save_top_k": 2,
+        "save_top_k": 1,
         "verbose": 1,
     },
 )
+
+config.model.n_mels = config.data_module.AudioParams["n_mels"]
 
 config.data_module.AudioParams["n_mels"] = config.model.n_mels
 
@@ -126,7 +132,8 @@ def prediction_for_clip(test_df, clip, models, config, threshold=0.05, threshold
 
         for i, model in enumerate(models):
             model_preds = np.empty((0, len(ALL_BIRDS)))
-            output = model(image)
+            with torch.cuda.amp.autocast():
+                output = model(image)
             model_preds = np.concatenate([model_preds, output["clipwise_output"].detach().cpu().numpy()])
             preds.append(model_preds)
 
@@ -143,7 +150,7 @@ def prediction_for_clip(test_df, clip, models, config, threshold=0.05, threshold
         else:
             labels_str_list = list(map(lambda x: ALL_BIRDS[x], labels))
             label_string = " ".join(labels_str_list)
-            prediction_dict[str(row_id)] = label_string
+            prediction_dict[str(id)] = label_string
     return prediction_dict
 
 
