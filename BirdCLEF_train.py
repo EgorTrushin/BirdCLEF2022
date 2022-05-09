@@ -57,7 +57,7 @@ if __name__ == "__main__":
             filename=f"f{fold}-{{val_score:.5f}}-{{val_loss:.5f}}",
             **config["ckpt_callback"],
         )
-        es_callback = EarlyStopping(config["es_callback"])
+        es_callback = EarlyStopping(**config["es_callback"])
 
         trainer = pl.Trainer(callbacks=[chkpt_callback, es_callback], logger=None, **config["trainer"])
 
