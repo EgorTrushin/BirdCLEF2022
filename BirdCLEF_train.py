@@ -3,13 +3,12 @@
 
 import ast
 import gc
-import yaml
-from argparse import Namespace
 from pathlib import Path
 
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+import yaml
 from BirdCLEF_DataModule import BirdCLEFDataModule
 from BirdCLEF_Model import BirdCLEFModel
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
