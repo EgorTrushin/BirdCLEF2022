@@ -17,7 +17,7 @@ from sklearn.model_selection import StratifiedKFold
 config = Namespace(
     data_path="/home/egortrushin/datasets/birdclef-2022",
     folds=Namespace(n_splits=5, random_state=42),
-    train_folds=[0, 1, 2, 3, 4],
+    train_folds=[0],
     seed=71,
     data_module=Namespace(
         train_bs=32,
@@ -25,9 +25,9 @@ config = Namespace(
         workers=8,
         AudioParams={
             "sr": 32000,
-            "duration": 5,
             "fmin": 20,
             "fmax": 16000,
+            "hop_length": 512,
         },
     ),
     trainer=Namespace(
@@ -36,23 +36,16 @@ config = Namespace(
         precision=16,
         deterministic=True,
         stochastic_weight_avg=False,
-        # gradient_clip_val=None,
         progress_bar_refresh_rate=1,
-        # limit_train_batches=0.1,
-        # limit_val_batches=0.1,
     ),
     model=Namespace(
-        p_spec_augmenter=1.0,
+        p_spec_augmenter=0.25,
         n_mels=128,
-        base_model=Namespace(
-            model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3
-        ),
+        base_model=Namespace(model_name="tf_efficientnet_b0_ns", pretrained=True, in_chans=3),
         optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
         scheduler=Namespace(
             name="CosineAnnealingLR",
-            scheduler_params={
-                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}
-            },
+            scheduler_params={"CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1}},
         ),
     ),
     es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
@@ -60,7 +53,7 @@ config = Namespace(
         "monitor": "val_score",
         "dirpath": "ckpts",
         "mode": "max",
-        "save_top_k": 2,
+        "save_top_k": 1,
         "verbose": 1,
     },
 )
@@ -71,11 +64,7 @@ config.data_module.AudioParams["n_mels"] = config.model.n_mels
 def process_data(data_path):
     """Read and process metadata file."""
     df = pd.read_csv(Path(data_path, "train_metadata.csv"))
-    df["new_target"] = (
-        df["primary_label"]
-        + " "
-        + df["secondary_labels"].map(lambda x: " ".join(ast.literal_eval(x)))
-    )
+    df["new_target"] = df["primary_label"] + " " + df["secondary_labels"].map(lambda x: " ".join(ast.literal_eval(x)))
     df["len_new_target"] = df["new_target"].map(lambda x: len(x.split()))
     df["file_path"] = data_path + "/train_audio/" + df["filename"]
     return df

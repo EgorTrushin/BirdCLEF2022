@@ -412,13 +412,7 @@ def compute_melspec(y, params):
     Returns:
         np array -- Mel-spectrogram
     """
-    melspec = librosa.feature.melspectrogram(
-        y=y,
-        sr=params["sr"],
-        n_mels=params["n_mels"],
-        fmin=params["fmin"],
-        fmax=params["fmax"],
-    )
+    melspec = librosa.feature.melspectrogram(y=y, **params)
 
     melspec = librosa.power_to_db(melspec).astype(np.float32)
 
@@ -488,10 +482,11 @@ def mono_to_color(X, eps=1e-6, mean=None, std=None):
 
 
 class AllBirdsDataset(torch.utils.data.Dataset):
-    def __init__(self, df, AudioParams, mode="train"):
+    def __init__(self, df, AudioParams, duration=5, mode="train"):
         self.df = df
         self.AudioParams = AudioParams
         self.mode = mode
+        self.duration = duration
 
         mean = (0.485, 0.456, 0.406)  # RGB
         std = (0.229, 0.224, 0.225)  # RGB
@@ -553,7 +548,7 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             y = np.mean(y, 1)
 
         len_y = len(y)
-        effective_length = self.AudioParams["sr"] * self.AudioParams["duration"]
+        effective_length = self.AudioParams["sr"] * self.duration
         if len_y < effective_length:
             new_y = np.zeros(effective_length, dtype=y.dtype)
             start = np.random.randint(effective_length - len_y)
@@ -566,15 +561,15 @@ class AllBirdsDataset(torch.utils.data.Dataset):
             y = y.astype(np.float32)
 
         if len(y) > 0:
-            y = y[: self.AudioParams["duration"] * self.AudioParams["sr"]]
+            y = y[: self.duration * self.AudioParams["sr"]]
 
             if self.wave_transforms:
                 y = self.wave_transforms(y, sr=self.AudioParams["sr"])
 
-        y = np.concatenate([y, y, y])[: self.AudioParams["duration"] * self.AudioParams["sr"]]
+        y = np.concatenate([y, y, y])[: self.duration * self.AudioParams["sr"]]
         y = crop_or_pad(
             y,
-            self.AudioParams["duration"] * self.AudioParams["sr"],
+            self.duration * self.AudioParams["sr"],
             sr=self.AudioParams["sr"],
             train=True,
             probs=None,
