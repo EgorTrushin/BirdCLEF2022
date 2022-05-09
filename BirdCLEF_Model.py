@@ -260,7 +260,15 @@ class BirdCLEFModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         images = batch["image"]
         labels = batch["targets"]
-        logits = self(images)  # .squeeze(1)
+
+        if self.current_epoch < self.config.mixup_epochs:
+            inputs, new_targets = mixup(images, labels, self.config.mixup_alpha)
+            logits = self(inputs)
+            loss = mixup_criterion(logits, new_targets, self.loss)
+        else:
+            logits = self(images)
+            loss = self.loss(logits.float(), labels)
+
         loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
         y_pred = logits["clipwise_output"].cpu().detach().numpy()
