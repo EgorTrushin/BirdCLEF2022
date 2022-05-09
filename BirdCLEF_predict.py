@@ -2,7 +2,7 @@
 """Training script for BirdCLEF 2022."""
 
 import glob
-from argparse import Namespace
+import yaml
 from pathlib import Path
 
 import albumentations as A
@@ -12,59 +12,6 @@ import soundfile as sf
 import torch
 from BirdCLEF_DataModule import ALL_BIRDS, compute_melspec, mono_to_color
 from BirdCLEF_Model import BirdCLEFModel
-
-config = Namespace(
-    data_path="/home/egortrushin/datasets/birdclef-2022",
-    folds=Namespace(n_splits=5, random_state=42),
-    train_folds=[0],
-    seed=71,
-    data_module=Namespace(
-        train_bs=32,
-        valid_bs=128,
-        workers=8,
-        AudioParams={
-            "sr": 32000,
-            "fmin": 20,
-            "fmax": 16000,
-            "n_mels": 256,
-            "hop_length": 256,
-        },
-    ),
-    trainer=Namespace(
-        gpus=1,
-        max_epochs=100,
-        min_epochs=50,
-        precision=16,
-        deterministic=True,
-        stochastic_weight_avg=False,
-        progress_bar_refresh_rate=1,
-    ),
-    model=Namespace(
-        p_spec_augmenter=0.25,
-        mixup_epochs=18,
-        mixup_alpha=0.4,
-        base_model=Namespace(model_name="tf_efficientnet_b1_ns", pretrained=True, in_chans=3),
-        SpecAugmentation=Namespace(time_drop_width=64, time_stripes_num=2, freq_drop_width=8, freq_stripes_num=2),
-        optimizer_params={"lr": 1.0e-3, "weight_decay": 0.01},
-        scheduler=Namespace(
-            name="CosineAnnealingLR",
-            params={
-                "CosineAnnealingLR": {"T_max": 500, "eta_min": 1.0e-6, "last_epoch": -1},
-                "ReduceLROnPlateau": {"mode": "min", "factor": 0.31622776601, "patience": 4, "verbose": True},
-            },
-        ),
-    ),
-    es_callback={"monitor": "val_loss", "mode": "min", "patience": 8},
-    ckpt_callback={
-        "monitor": "val_score",
-        "dirpath": "ckpts",
-        "mode": "max",
-        "save_top_k": 1,
-        "verbose": 1,
-    },
-)
-
-config.model.n_mels = config.data_module.AudioParams["n_mels"]
 
 
 class TestDataset(torch.utils.data.Dataset):
@@ -180,6 +127,10 @@ def prediction(test_audios, models, config, threshold=0.05, threshold_long=None)
 CHKPT_PATH = "ckpts/"
 DATA_PATH = "/home/egortrushin/datasets/birdclef-2022"
 
+with open(Path(CHKPT_PATH, "config.yaml"), "r") as file_obj:
+    config = yaml.safe_load(file_obj)
+config["model"]["n_mels"] = config["data_module"]["AudioParams"]["n_mels"]
+
 threshold = 0.02
 threshold_long = None
 
@@ -193,7 +144,7 @@ sample_submission = pd.read_csv(Path(DATA_PATH, "sample_submission.csv"))
 models = []
 for path in glob.glob(CHKPT_PATH + "/*.ckpt"):
     print(path)
-    model = BirdCLEFModel.load_from_checkpoint(path, config=config.model)
+    model = BirdCLEFModel.load_from_checkpoint(path, config=config["model"])
     model.to(device)
     model.eval()
     models.append(model)
@@ -201,7 +152,7 @@ for path in glob.glob(CHKPT_PATH + "/*.ckpt"):
 pred_dicts = prediction(
     all_audios,
     models,
-    config=vars(config.data_module),
+    config=config["data_module"],
     threshold=threshold,
     threshold_long=threshold_long,
 )
