@@ -265,7 +265,7 @@ class BirdCLEFModel(pl.LightningModule):
             loss = mixup_criterion(logits, new_targets, self.loss)
         else:
             logits = self(images)
-            loss = self.loss(logits.float(), labels)
+            loss = self.loss(logits, labels.float())
 
         loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
