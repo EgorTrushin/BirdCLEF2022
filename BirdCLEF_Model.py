@@ -14,10 +14,20 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, ReduceLROnPlateau
 from sklearn import metrics
 
 
-def loss_fn(logits, targets):
-    loss_fct = BCEFocal2WayLoss()
-    loss = loss_fct(logits, targets)
-    return loss
+def mixup(data, targets, alpha):
+    indices = torch.randperm(data.size(0))
+    shuffled_data = data[indices]
+    shuffled_targets = targets[indices]
+
+    lam = np.random.beta(alpha, alpha)
+    new_data = data * lam + shuffled_data * (1 - lam)
+    new_targets = [targets, shuffled_targets, lam]
+    return new_data, new_targets
+
+
+def mixup_criterion(preds, new_targets, loss):
+    targets1, targets2, lam = new_targets[0], new_targets[1], new_targets[2]
+    return lam * loss(preds, targets1) + (1 - lam) * loss(preds, targets2)
 
 
 # https://www.kaggle.com/c/rfcx-species-audio-detection/discussion/213075
@@ -169,6 +179,7 @@ class BirdCLEFModel(pl.LightningModule):
     def __init__(self, config):
         super().__init__()
         self.config = config
+        self.loss = BCEFocal2WayLoss()
 
         self.p_spec_augmenter = config.p_spec_augmenter
 
@@ -250,7 +261,7 @@ class BirdCLEFModel(pl.LightningModule):
         images = batch["image"]
         labels = batch["targets"]
         logits = self(images)  # .squeeze(1)
-        loss = loss_fn(logits, labels.float())
+        loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
         y_pred = logits["clipwise_output"].cpu().detach().numpy()
         score = metrics.f1_score(y_true, y_pred > 0.3, average="micro")
@@ -265,7 +276,7 @@ class BirdCLEFModel(pl.LightningModule):
         images = batch["image"]
         labels = batch["targets"]
         logits = self(images)  # .squeeze(1)
-        loss = loss_fn(logits, labels.float())
+        loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
         y_pred = logits["clipwise_output"].cpu().detach().numpy()
         score = metrics.f1_score(y_true, y_pred > 0.3, average="micro")
