@@ -181,8 +181,6 @@ class BirdCLEFModel(pl.LightningModule):
         self.config = config
         self.loss = BCEFocal2WayLoss()
 
-        self.p_spec_augmenter = config["p_spec_augmenter"]
-
         self.spec_augmenter = SpecAugmentation(**config["SpecAugmentation"])
 
         self.bn0 = nn.BatchNorm2d(config["n_mels"])
@@ -214,7 +212,7 @@ class BirdCLEFModel(pl.LightningModule):
         x = x.transpose(1, 3)
 
         if self.training:
-            if random.random() < self.p_spec_augmenter:
+            if random.random() < self.config["p_spec_augmenter"]:
                 x = self.spec_augmenter(x)
 
         x = x.transpose(2, 3)
@@ -261,7 +259,7 @@ class BirdCLEFModel(pl.LightningModule):
         images = batch["image"]
         labels = batch["targets"]
 
-        if self.current_epoch < self.config["mixup_epochs"]:
+        if self.current_epoch < self.config["mixup_epochs"] and random.random() < self.config["mixup_p"]:
             inputs, new_targets = mixup(images, labels, self.config["mixup_alpha"])
             logits = self(inputs)
             loss = mixup_criterion(logits, new_targets, self.loss)

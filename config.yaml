@@ -7,20 +7,20 @@ train_folds: [0]
 seed: 71
 
 data_module:
-    train_bs: 32
+    train_bs: 16
     valid_bs: 128
     workers: 8
     AudioParams:
         sr: 32000
         fmin: 20
         fmax: 16000
-        n_mels: 128
+        n_mels: 224
         hop_length: 512
 
 trainer:
     gpus: 1
-    max_epochs: 100
-    min_epochs: 50
+    max_epochs: 35
+    min_epochs: 35
     precision: 16
     deterministic: True
     stochastic_weight_avg: False
@@ -29,6 +29,7 @@ trainer:
 model:
     p_spec_augmenter: 0.25
     mixup_epochs: 18
+    mixup_p: 0.5
     mixup_alpha: 0.4
     base_model:
         model_name: "tf_efficientnet_b0_ns"
