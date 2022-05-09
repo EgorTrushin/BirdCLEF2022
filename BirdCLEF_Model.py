@@ -267,7 +267,6 @@ class BirdCLEFModel(pl.LightningModule):
             logits = self(images)
             loss = self.loss(logits, labels.float())
 
-        loss = self.loss(logits, labels.float())
         y_true = labels.cpu().numpy()
         y_pred = logits["clipwise_output"].cpu().detach().numpy()
         score = metrics.f1_score(y_true, y_pred > 0.3, average="micro")
